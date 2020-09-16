@@ -22,7 +22,9 @@ func main() {
 
     //doUnarySum(c)
 
-    doServerStreaming(c)
+    //doServerStreaming(c)
+
+    doClientStreaming(c)
 }
 
 
@@ -59,4 +61,40 @@ func doServerStreaming(c calculatorpb.CalculatorServiceClient) {
 
         fmt.Println(msg)
     }
+}
+
+func doClientStreaming(c calculatorpb.CalculatorServiceClient) {
+    reqs := []*calculatorpb.ComputeAverageRequest{
+        {
+            Number: 1,
+        },
+        {
+            Number: 2,
+        },
+        {
+            Number: 3,
+        },
+        {
+            Number: 4,
+        },
+    }
+
+    stream, err := c.ComputeAverage(context.Background())
+    if err != nil {
+        log.Fatalf("could not connect: %v", err)
+    }
+
+    for _, req := range reqs {
+        err := stream.Send(req)
+        if err != nil {
+            log.Fatalf("could not connect: %v", err)
+        }
+    }
+
+    resp, err := stream.CloseAndRecv()
+    if err != nil {
+        log.Fatalf("could not connect: %v", err)
+    }
+
+    fmt.Println(resp)
 }

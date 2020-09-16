@@ -5,11 +5,18 @@ import (
     "fmt"
     "github.com/rustagram/grpc-go-course/calculator/calculatorpb"
     "google.golang.org/grpc"
+    "io"
     "log"
     "net"
 )
 
 type server struct{}
+
+func (s *server) Sum(ctx context.Context, req *calculatorpb.SumRequest) (*calculatorpb.SumResponse, error) {
+    return &calculatorpb.SumResponse{
+        Sum: req.GetSum().GetA() + req.GetSum().GetB(),
+    }, nil
+}
 
 func (s *server) PrimeNumberDecomposition(
     req *calculatorpb.PrimeNumberDecompositionRequest, stream calculatorpb.CalculatorService_PrimeNumberDecompositionServer) error {
@@ -35,10 +42,22 @@ func (s *server) PrimeNumberDecomposition(
     return nil
 }
 
-func (s *server) Sum(ctx context.Context, req *calculatorpb.SumRequest) (*calculatorpb.SumResponse, error) {
-    return &calculatorpb.SumResponse{
-        Sum: req.GetSum().GetA() + req.GetSum().GetB(),
-    }, nil
+func (s *server) ComputeAverage(stream calculatorpb.CalculatorService_ComputeAverageServer) error {
+    var sum, count int64
+    for {
+        msg, err := stream.Recv()
+        if err == io.EOF {
+            return stream.SendAndClose(&calculatorpb.ComputeAverageResponse{
+                Average: float64(sum)/float64(count),
+            })
+        }
+        if err != nil {
+            return err
+        }
+
+        sum += msg.Number
+        count++
+    }
 }
 
 func main() {
