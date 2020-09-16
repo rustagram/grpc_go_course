@@ -22,7 +22,9 @@ func main() {
 
     //doUnary(c)
 
-    doServerStreaming(c)
+    //doServerStreaming(c)
+
+    doClientStreaming(c)
 
 }
 
@@ -62,4 +64,53 @@ func doServerStreaming(c greetpb.GreetServiceClient) {
 
         fmt.Println(msg)
     }
+}
+
+func doClientStreaming(c greetpb.GreetServiceClient) {
+    stream, err := c.LongGreet(context.Background())
+    if err != nil {
+        log.Fatalf("could not connect: %v", err)
+    }
+
+    reqs := []*greetpb.LongGreetRequest{
+        {
+            Greeting: &greetpb.Greeting{
+                FirstName: "Rustam",
+            },
+        },
+        {
+            Greeting: &greetpb.Greeting{
+                FirstName: "Akbar",
+            },
+        },
+        {
+            Greeting: &greetpb.Greeting{
+                FirstName: "Begzod",
+            },
+        },
+        {
+            Greeting: &greetpb.Greeting{
+                FirstName: "Tulkin",
+            },
+        },
+        {
+            Greeting: &greetpb.Greeting{
+                FirstName: "Farhod",
+            },
+        },
+    }
+
+    for _, req := range reqs {
+        err := stream.Send(req)
+        if err != nil {
+            log.Fatalf("could not connect: %v", err)
+        }
+    }
+
+    resp, err := stream.CloseAndRecv()
+    if err != nil {
+        log.Fatalf("could not connect: %v", err)
+    }
+
+    fmt.Println(resp)
 }
