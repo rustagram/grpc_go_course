@@ -7,6 +7,7 @@ import (
     "google.golang.org/grpc"
     "io"
     "log"
+    "time"
 )
 
 func main() {
@@ -24,7 +25,9 @@ func main() {
 
     //doServerStreaming(c)
 
-    doClientStreaming(c)
+    //doClientStreaming(c)
+
+    doBiDiStreamig(c)
 }
 
 
@@ -97,4 +100,66 @@ func doClientStreaming(c calculatorpb.CalculatorServiceClient) {
     }
 
     fmt.Println(resp)
+}
+
+func doBiDiStreamig(c calculatorpb.CalculatorServiceClient) {
+    reqs := []*calculatorpb.FindMaximumRequest{
+        {
+            Number: 1,
+        },
+        {
+            Number: 5,
+        },
+        {
+            Number: 3,
+        },
+        {
+            Number: 6,
+        },
+        {
+            Number: 2,
+        },
+        {
+            Number: 20,
+        },
+    }
+
+    stream, err := c.FindMaximum(context.Background())
+    if err != nil {
+        log.Fatalf("could not connect: %v", err)
+    }
+
+    waitch := make(chan struct{})
+
+    go func() {
+        for _, req := range reqs {
+            err = stream.Send(&calculatorpb.FindMaximumRequest{
+                Number: req.GetNumber(),
+            })
+            if err == io.EOF {
+                break
+            }
+            if err != nil {
+                log.Fatalf("could not connect: %v", err)
+            }
+            time.Sleep(time.Second)
+        }
+        err := stream.CloseSend()
+        if err != nil {
+            log.Fatalf("could not connect: %v", err)
+        }
+    }()
+
+    go func() {
+        for {
+            resp, err := stream.Recv()
+            if err != nil {
+                log.Fatalf("could not connect: %v", err)
+            }
+
+            fmt.Println(resp.CurrentMaximum)
+        }
+    }()
+
+    <-waitch
 }

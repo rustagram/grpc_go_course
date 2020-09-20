@@ -8,6 +8,7 @@ import (
     "log"
     "net"
     "strconv"
+    "time"
 
     "google.golang.org/grpc"
 )
@@ -68,6 +69,13 @@ func (s *server) GreetEveryone(stream greetpb.GreetService_GreetEveryoneServer) 
             return err
         }
     }
+}
+
+func (s *server) GreetWithDeadline(ctx context.Context, req *greetpb.GreetWithDeadlineRequest) (*greetpb.GreetWithDeadlineResponse, error) {
+    time.Sleep(time.Second * 2)
+    return &greetpb.GreetWithDeadlineResponse{
+        Result: "hello " + req.GetGreeting().GetFirstName(),
+    }, nil
 }
 
 

@@ -5,6 +5,8 @@ import (
     "fmt"
     "github.com/rustagram/grpc-go-course/greet/greetpb"
     "google.golang.org/grpc"
+    "google.golang.org/grpc/codes"
+    "google.golang.org/grpc/status"
     "io"
     "log"
     "time"
@@ -27,7 +29,9 @@ func main() {
 
     //doClientStreaming(c)
 
-    doBiDiStreaming(c)
+    //doBiDiStreaming(c)
+
+    doUnaryWithDeadline(c)
 }
 
 func doUnary(c greetpb.GreetServiceClient) {
@@ -185,4 +189,25 @@ func doBiDiStreaming(c greetpb.GreetServiceClient) {
     }()
 
     <-waitch
+}
+
+func doUnaryWithDeadline(c greetpb.GreetServiceClient) {
+    ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(1))
+    defer cancel()
+
+    resp, err := c.GreetWithDeadline(ctx, &greetpb.GreetWithDeadlineRequest{
+        Greeting: &greetpb.Greeting{
+            FirstName: "Rustam",
+            LastName: "Turgunov",
+        },
+    })
+    st, _ := status.FromError(err)
+    if st.Code() == codes.DeadlineExceeded {
+        fmt.Println("yeeeeaaah baby!")
+    }
+    if err != nil {
+        log.Fatalf("could not connect: %v", err)
+    }
+
+    fmt.Println(resp.Result)
 }
